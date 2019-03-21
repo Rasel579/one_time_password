@@ -1,3 +1,6 @@
+#Privacy cridentials
+service_account.json
+twilio.js
 # Logs
 logs
 *.log
