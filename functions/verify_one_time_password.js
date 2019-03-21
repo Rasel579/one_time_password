@@ -1,3 +1,5 @@
+/* eslint-disable promise/always-return */
+/* eslint-disable promise/catch-or-return */
 const admin = require('firebase-admin');
 
 module.exports = function(req, res){
@@ -5,13 +7,14 @@ module.exports = function(req, res){
       return res.status(422).send({ error: 'Phone and code must be provided!'});
   }
 
-  const phone = String(req.body.phone).replace(/[^\d]/g, '');
-  const code = parseint(req.body.code);
+  const phone = String(req.body.phone).replace(/[^\d]/g,'');
+  const code = parseInt(req.body.code);
 
   admin.auth().getUser(phone)
        .then(() => {
-         const ref = admin.ref('/users' + phone);
+         const ref = admin.database().ref('users/' + phone);
          ref.on('value', snapshot => {
+            ref.off() //for stoping listen any changes
             const user = snapshot.val();
 
             if(user.code !== code || !user.codeValid){
@@ -19,8 +22,9 @@ module.exports = function(req, res){
             }
 
             ref.update({ codeValid: false });
-         });
-          return res.send({ success: true });
+            admin.auth().createCustomToken(phone)
+              .then(token => res.send({ token: token}));
+         })
        })
        .catch(err => res.status(422).send({
            error: err
